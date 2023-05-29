@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// USUARIO Y TIPO DE USUARIO
+model usu_usuario {
+  usu_id                   Int                        @id @default(autoincrement())
+  usu_nombre               String
+  usu_apellido             String
+  usu_correo               String                     @unique
+  usu_hash                 String
+  usu_usuario_usuario_tipo usu_usuario_usuario_tipo[]
+  usu_usuario_grupo        usu_usuario_grupo[]
+  usu_usuario_evaluacion   usu_usuario_evaluacion[]
+}
+
+model con_usuario_tipo {
+  usu_tipo_id     Int    @id @default(autoincrement())
+  usu_tipo_nombre String @unique
+
+  usu_usuario_usuario_tipo usu_usuario_usuario_tipo[]
+}
+
+model usu_usuario_usuario_tipo {
+  us_usu_usu_tipo_id Int @id @default(autoincrement())
+
+  usuario_tipo    con_usuario_tipo @relation(fields: [usuario_tipo_id], references: [usu_tipo_id])
+  usuario_tipo_id Int
+
+  usu_usuario    usu_usuario @relation(fields: [usu_usuario_id], references: [usu_id])
+  usu_usuario_id Int
+}
+
+/////////////////////////////
+
+// Pruebas Preguntas Respuestas
+model prueba {
+  prueb_id                 Int          @id @default(autoincrement())
+  prueb_usuario_id         Int?
+  prueb_cantidad_preguntas Int
+  prueb_nombre             String
+  prueb_dificultad         String
+  pregunta                 pregunta[]
+  evaluacion               evaluacion[]
+}
+
+model matriz {
+  mat_id        Int        @id @default(autoincrement())
+  mat_enunciado String
+  pregunta      pregunta[]
+}
+
+model pregunta {
+  preg_id                 Int     @id @default(autoincrement())
+  preg_texto              String
+  preg_tipo               String
+  preg_respuesta_correcta String?
+  preg_dificultad         String
+
+  prueba    prueba @relation(fields: [prueba_id], references: [prueb_id])
+  prueba_id Int
+
+  matriz            matriz?             @relation(fields: [matriz_id], references: [mat_id])
+  matriz_id         Int?
+  pregunta_opcion   pregunta_opcion[]
+  pregunta_etiqueta pregunta_etiqueta[]
+}
+
+model pregunta_opcion {
+  preg_op_id Int @id @default(autoincrement())
+
+  pregunta    pregunta @relation(fields: [pregunta_id], references: [preg_id])
+  pregunta_id Int
+
+  opcion    opcion @relation(fields: [opcion_id], references: [opt_id])
+  opcion_id Int
+}
+
+model opcion {
+  opt_id          Int               @id @default(autoincrement())
+  opt_texto       String
+  pregunta_opcion pregunta_opcion[]
+}
+
+model etiqueta {
+  etiq_id           Int                 @id @default(autoincrement())
+  etiq_texto        String
+  pregunta_etiqueta pregunta_etiqueta[]
+}
+
+model pregunta_etiqueta {
+  preg_etiq_id Int @id @default(autoincrement())
+
+  pregunta    pregunta @relation(fields: [pregunta_id], references: [preg_id])
+  pregunta_id Int
+
+  etiqueta    etiqueta @relation(fields: [etiqueta_id], references: [etiq_id])
+  etiqueta_id Int
+}
+
+///////////////////////////////////////////////////////////////
+
+// Grupos Personas
+
+model grupo {
+  grup_id            Int                 @id @default(autoincrement())
+  grup_nombre        String
+  grup_estilo_visual String?
+  grupo_persona      grupo_persona[]
+  usu_usuario_grupo  usu_usuario_grupo[]
+  evaluacion         evaluacion[]
+}
+
+model usu_usuario_grupo {
+  usu_usuario_grupo_id Int @id @default(autoincrement())
+
+  usuario        usu_usuario @relation(fields: [usu_usuario_id], references: [usu_id])
+  usu_usuario_id Int
+
+  grupo    grupo @relation(fields: [grupo_id], references: [grup_id])
+  grupo_id Int
+}
+
+model per_persona {
+  per_id        Int             @id @default(autoincrement())
+  per_nombre    String
+  per_apellido  String
+  per_correo    String
+  grupo_persona grupo_persona[]
+}
+
+model grupo_persona {
+  grup_per_id Int @id @default(autoincrement())
+
+  grupo    grupo @relation(fields: [grupo_id], references: [grup_id])
+  grupo_id Int
+
+  persona    per_persona @relation(fields: [persona_id], references: [per_id])
+  persona_id Int
+}
+
+/////////////////////////////////////////////////
+
+// Evaluacion 
+
+model evaluacion {
+  eval_id Int @id @default(autoincrement())
+
+  eval_nombre            String   @default("Evaluación X")
+  eval_fecha_creado      DateTime @default(now())
+  eval_fecha_termino     DateTime
+  eval_instrucciones     String
+  eval_activa            Boolean  @default(true)
+
+  prueba                 prueba @relation(fields: [prueba_id], references: [prueb_id])
+  prueba_id              Int
+
+  grupo                  grupo @relation(fields: [grupo_id], references: [grup_id])
+  grupo_id               Int
+  usu_usuario_evaluacion usu_usuario_evaluacion[]
+}
+
+model usu_usuario_evaluacion {
+  usu_eval_id Int @id @default(autoincrement())
+
+  usu_usuario    usu_usuario @relation(fields: [usu_usuario_id], references: [usu_id])
+  usu_usuario_id Int
+
+  evaluacion    evaluacion @relation(fields: [evaluacion_id], references: [eval_id])
+  evaluacion_id Int
+}
+
+///////////////////////////////////////////////////////
